@@ -1,5 +1,5 @@
 # vote
-vim-notes spiritual successor with emphasis on tracking links between notes.
+vim-notes spiritual successor with (planned, unimplemented) emphasis on tracking links between notes.
 
 Optional dependency: pydantic (provides config typechecking)
 
