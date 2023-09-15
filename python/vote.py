@@ -59,7 +59,7 @@ class Vote:
     @staticmethod
     def _ft_autocmd(raw_path):
         tree = (Path(raw_path).expanduser() / "*").as_posix()
-        viim.command(f'autocmd BufRead {tree} setlocal filetype=markdown')
+        vim.command(f'autocmd BufRead {tree} setlocal filetype=markdown')
 
     def ensure_folders(self):
         paths = [self.conf.root_dir] + list((self.conf.extra_dirs or {}).values())
