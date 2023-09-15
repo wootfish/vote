@@ -40,6 +40,14 @@ class Vote:
         # singleton object so there's nothing for the side effects to matter to
         self.ensure_folders()
         self.refs, self.backrefs = self._get_refs_and_backrefs()
+        for path in self.dirs:
+            self._ft_autocmd(path)
+
+    @property
+    def dirs(self):
+        yield self.conf.root_dir
+        if self.conf.extra_dirs is not None:
+            yield from self.conf.extra_dirs.values()
 
     @staticmethod
     def _input(prompt):
@@ -47,6 +55,12 @@ class Vote:
         vim.command('let user_input = input("' + prompt + ': ")')
         vim.command('call inputrestore()')
         return vim.eval('user_input')
+
+    @staticmethod
+    def _ft_autocmd(raw_path):
+        tree = (Path(raw_path).expanduser() / "*").as_posix()
+        print(tree)
+        vim.command(f'autocmd BufRead {tree} setlocal filetype=markdown')
 
     def ensure_folders(self):
         paths = [self.conf.root_dir] + list((self.conf.extra_dirs or {}).values())

@@ -38,11 +38,14 @@ function! VoteStart()
     execute 'cd' g:vote_note_dir
     NERDTree
     normal CD
+    wincmd p
+    q
+    normal j
     " TODO is there anything more to do here?
 endfunc
 
 " command bindings
-command -nargs=0 NoteStartup :call VoteStart()
+command -nargs=0 VoteStart :call VoteStart()
 command -nargs=? NoteNew :python3 vote.add_note("<args>")
 command -nargs=1 NoteOpen :python3 vote.open_note("<args>")
 "command! -nargs=? VanimRenderL :python3 vote.render("l", <args>)
