@@ -2,11 +2,12 @@ import vim
 import os
 import os.path
 from pathlib import Path
-from os import scandir, stat, umask
+from os import scandir, stat, umask, fsdecode
 try:
     from pydantic.dataclasses import dataclass
 except ImportError:
     from dataclasses import dataclass
+
 
 
 class VoteError(Exception): pass
@@ -26,6 +27,8 @@ def optional(var):
 
 
 class Vote:
+    bullets = ('•', '◦', '▸', '▹', '▪', '▫')
+
     def __init__(self):
         # take snapshot of config options at start
         self.conf = VoteConfig(
@@ -35,13 +38,22 @@ class Vote:
         )
 
         # ordinarily you should keep code with side effects out of __init__ and
-        # just use this for creating stuff and setting up references but i'm
+        # just use this for creating stuff and setting up references, but i'm
         # ignoring that principle here because we know Vote will be a top-level
         # singleton object so there's nothing for the side effects to matter to
         self.ensure_folders()
         self.refs, self.backrefs = self._get_refs_and_backrefs()
         for path in self.dirs:
             self._ft_autocmd(path)
+
+    @property
+    def _root_dir(self):
+        return Path(self.conf.root_dir).expanduser()
+
+    @property
+    def _extra_dirs(self):
+        if self.conf.extra_dirs is None: return {}
+        return {key: Path(val).expanduser() for key, val in self.conf.extra_dirs.items()}
 
     @property
     def dirs(self):
@@ -74,6 +86,7 @@ class Vote:
         # parses eg newnote -> ("newnote", root_dir), tech:newnote -> ("newnote", extra_dirs["tech"])
         # NOTE: assumes ":" indicates a prefix, so note names with ":" in them are not allowed here, but they are otherwise legal and you can still rename a note to include them
         # NOTE: re above, maybe make the split metacharacter configurable? like it defaults to ":" but you can reassign it? TODO add this once the important stuff is stable
+        # NOTE: if it is configurable we will have to handle that in other places like self.notes() too
         if ":" in name:
             prefix, name = name.split(":", 1)
             if self.conf.extra_dirs is None or prefix not in self.conf.extra_dirs:
@@ -97,13 +110,32 @@ class Vote:
         vim.command("e " + note_path.as_posix())
 
     def _get_refs_and_backrefs(self):
-        ...  # TODO
-        return (None, None)
+        names = self.notes
+        refs = {name: [] for name in names}
+        brefs = {name: [] for name in names}
+        for src_name in names:
+            path = self.parse_name(src_name)
+            targets = list(names)
+            found = []
+            with open(path, "r") as f:  # TODO FIXME replace with grep
+                for line in f:
+                    for target in targets[:]:
+                        if target in line:
+                            found.append(target)
+                            targets.remove(target)
+                    if len(targets) == 0:
+                        break
+            refs[src_name] += found
+            for dst_name in found:
+                brefs[dst_name].append(src_name)
+        return (refs, brefs)
 
     def _update_refs_and_backrefs(self):  # call this on writes, moves, etc
-        ...  # TODO
+        self.refs, self.backrefs = self._get_refs_and_backrefs()  # TODO FIXME absurdly inefficient - should update dicts in-place & only look at changed files
 
     @property
     def notes(self):
-        # tuple of recognized note names
-        ...  # TODO
+        in_root_dir = tuple(fsdecode(entry.name) for entry in scandir(self._root_dir) if entry.is_file() and not entry.name.startswith("."))
+        in_extra_dirs = tuple(key + ":" + fsdecode(entry.name)
+                              for key, path in self._extra_dirs for entry in scandir(path) if entry.is_file() and not entry.name.startswith("."))
+        return in_root_dir + in_extra_dirs

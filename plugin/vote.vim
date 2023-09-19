@@ -22,7 +22,7 @@ endif
 " get plugin's root dir
 let s:vote_root_dir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
 
-" add plugin's root dir to pythonpath, and import and run main class
+" add plugin's root dir to pythonpath, then import and run main class
 python3 << EOF
 import sys
 from os.path import normpath, join
@@ -48,13 +48,6 @@ endfunc
 command -nargs=0 VoteStart :call VoteStart()
 command -nargs=? NoteNew :python3 vote.add_note("<args>")
 command -nargs=1 NoteOpen :python3 vote.open_note("<args>")
-"command! -nargs=? VanimRenderL :python3 vote.render("l", <args>)
-"command! -nargs=? VanimRenderM :python3 vote.render("m", <args>)
-"command! -nargs=? VanimRenderH :python3 vote.render("h", <args>)
-"command! -nargs=? VanimRenderP :python3 vote.render("p", <args>)
-"command! -nargs=? VanimRenderK :python3 vote.render("k", <args>)
-"command! -nargs=? VanimRenderAll :python3 vote.render_all(<args>)
-"command! -nargs=0 VanimShow :python3 vote.show()
 
-" set a flag to indicate that this file has been run
+" indicate that this file has been run
 let g:vote_plugin_loaded = 1
